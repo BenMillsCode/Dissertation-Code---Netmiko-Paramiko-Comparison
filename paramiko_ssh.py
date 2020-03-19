@@ -1,25 +1,27 @@
 #1 Router SSH
-import netmiko, time
+import paramiko, time
 
 start = time.time()
 
-router = netmiko.ConnectHandler(
+client = paramiko.SSHClient()
+client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+router = client.connect(
     "192.168.0.1",
     username="admin",
-    password="admin",
-    device_type="cisco_ios",
+    password="admin"
 )
-
 print("Router Connected")
-router.disconnect()
 
+client.close()
 print('{:.3f}'.format(time.time() - start))
 
-#2 routers SSH
-import netmiko, time
+#2 Router SSH
+import paramiko, time
 
 start = time.time()
 
+client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+client = paramiko.SSHClient()
 two_routers = [{
     "host":"192.168.0.1",
     "username":"admin",
@@ -34,16 +36,19 @@ two_routers = [{
 
 for router in two_routers:
 
-    connected = netmiko.ConnectHandler(**router)
+    client.connect(router['host'], username=router['username'], password=router['password'])
     print("Router Connected")
-    connected.disconnect()
+    client.close()
 
 print('{:.3f}'.format(time.time() - start))
 
 #3 Router SSH
-import netmiko, time
+import paramiko, time
 
 start = time.time()
+
+client = paramiko.SSHClient()
+client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
 three_routers = [{
     "host":"192.168.0.1",
@@ -62,10 +67,10 @@ three_routers = [{
     "device_type":"cisco_ios"
     }]
 
-for router in two_routers:
+for router in three_routers:
 
-    connected = netmiko.ConnectHandler(**router)
+    client.connect(router['host'], username=router['username'], password=router['password'])
     print("Router Connected")
-    connected.disconnect()
+    client.close()
 
 print('{:.3f}'.format(time.time() - start))
