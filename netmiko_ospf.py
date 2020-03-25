@@ -1,25 +1,45 @@
-import re
+import netmiko, time, re
 
-output = '''
-Interface                  IP-Address      OK? Method Status                Protocol
-FastEthernet0/0            209.165.200.233 YES NVRAM  up                    up
-FastEthernet0/1            unassigned      YES NVRAM  administratively down down
-Serial1/0                  172.16.1.2      YES NVRAM  up                    down
-Serial1/1                  172.16.2.2      YES NVRAM  up                    down
-Serial1/2                  unassigned      YES NVRAM  administratively down down
-Serial1/3                  unassigned      YES NVRAM  administratively down down
-Serial2/0                  unassigned      YES NVRAM  administratively down down
-Serial2/1                  unassigned      YES NVRAM  administratively down down
-Serial2/2                  unassigned      YES NVRAM  administratively down down
-Serial2/3                  unassigned      YES NVRAM  administratively down down
-'''
+start = time.time()
 
-ospf_set = ["router ospf 1"]
+three_routers = [{
+    "host":"192.168.0.1",
+    "username":"admin",
+    "password":"admin",
+    "device_type":"cisco_ios"
+    }, {
+    "host":"192.168.0.2",
+    "username":"admin",
+    "password":"admin",
+    "device_type":"cisco_ios"
+    }, {
+    "host":"192.168.0.3",
+    "username":"admin",
+    "password":"admin",
+    "device_type":"cisco_ios"
+    }]
 
-ips = re.findall("\d+\.\d+\.\d+\.\d+", output)
-passive = re.findall("\d+\.\d+\.\d+\.\d+", output)
+for router in three_routers:
 
-for ip in ips:
-    ospf_set.append("network " + ip)
+    connected = netmiko.ConnectHandler(**router)
 
-print(ospf_set)
+    ospf_set = ["router ospf 1"]
+
+    output = connected.send_command("show running-config")
+
+    networks = re.findall("\d+\.\d+\.\d+\.\d+\s\d+\.\d+\.\d+\.\d+", output)
+
+    for network in networks:
+        netmask = network.split()[1]
+        nmconv = netmask.split(".")
+
+        wildcard = []
+        for num in nmconv:
+            wildcard.append(str(255 - int(num)))
+        ospf_set.append("network " + network.replace(netmask, ".".join(wildcard)) + " area 0")
+    
+    connected.send_config_set(ospf_set)
+
+    connected.disconnect()
+
+print('{:.3f}'.format(time.time() - start))
