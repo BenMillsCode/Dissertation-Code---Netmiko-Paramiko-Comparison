@@ -25,7 +25,7 @@ for router in three_routers:
 
     connected = client.invoke_shell()
 
-    connected.send("show running-config\n      ")
+    connected.send("show ip route connected\n")
 
     output = ""
     time.sleep(1)
@@ -35,20 +35,28 @@ for router in three_routers:
     while connected.recv_ready():
         output = output + connected.recv(65535).decode('utf-8')
 
-    networks = re.findall("\d+\.\d+\.\d+\.\d+\s\d+\.\d+\.\d+\.\d+", output)
+    networks = re.findall("\d+\.\d+\.\d+\.\d+/\d\d", output)
 
-    connected.send("configure terminal")
+    connected.send("configure terminal\n")
 
-    connected.send("router ospf 1")
+    connected.send("router ospf 1\n")
+
     for network in networks:
-        netmask = network.split()[1]
-        nmconv = netmask.split(".")
 
-        wildcard = []
-        for num in nmconv:
-            wildcard.append(str(255 - int(num)))
-        print("network " + network.replace(netmask, ".".join(wildcard)) + " area 0")
-        
+        net_ip = network.split("/")[0]
+
+        slash_mask = int(network.split("/")[1])
+
+        bin_mask = ("0" * slash_mask) + ("1" * (32 - slash_mask))
+
+        new_mask = [int(bin_mask[:8], 2), int(bin_mask[8:16], 2), int(bin_mask[16:24], 2), int(bin_mask[24:], 2)]
+
+        new_mask = list(map(str, new_mask))
+
+        connected.send("network " + net_ip + " " + ".".join(new_mask) + " area 0\n")
+    time.sleep(1)
+    connected.close()
+
 client.close()
 
 print('{:.3f}'.format(time.time() - start))

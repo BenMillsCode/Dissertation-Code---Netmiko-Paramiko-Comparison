@@ -25,19 +25,23 @@ for router in three_routers:
 
     ospf_set = ["router ospf 1"]
 
-    output = connected.send_command("show running-config")
+    output = connected.send_command("show ip route connected")
 
-    networks = re.findall("\d+\.\d+\.\d+\.\d+\s\d+\.\d+\.\d+\.\d+", output)
+    networks = re.findall("\d+\.\d+\.\d+\.\d+/\d\d", output)
 
     for network in networks:
-        print(network)
-        netmask = network.split()[1]
-        nmconv = netmask.split(".")
 
-        wildcard = []
-        for num in nmconv:
-            wildcard.append(str(255 - int(num)))
-        ospf_set.append("network " + network.replace(netmask, ".".join(wildcard)) + " area 0")
+        net_ip = network.split("/")[0]
+
+        slash_mask = int(network.split("/")[1])
+
+        bin_mask = ("0" * slash_mask) + ("1" * (32 - slash_mask))
+
+        new_mask = [int(bin_mask[:8], 2), int(bin_mask[8:16], 2), int(bin_mask[16:24], 2), int(bin_mask[24:], 2)]
+
+        new_mask = list(map(str, new_mask))
+
+        ospf_set.append("network " + net_ip + " " + ".".join(new_mask) + " area 0\n")
     
     connected.send_config_set(ospf_set)
 
