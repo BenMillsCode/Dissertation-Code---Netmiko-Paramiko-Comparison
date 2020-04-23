@@ -27,7 +27,7 @@ for router in three_routers:
 
     #show file systems
     fs_info = re.findall(r"\d+\s+\d+\s+\w+", connected.send_command("show file systems"))[0].split()
-    fs_perc = '{:.2f}'.format((int(fs_info[1]) / int(fs_info[0])) * 100)
+    fs_perc = '{:.2f}'.format(100 - (int(fs_info[1]) / int(fs_info[0])) * 100)
     print("File System Usage:\nType: " + fs_info[2], "Size(b): " + fs_info[0], "Free: " + fs_info[1],
           "Percent Used: " + str(fs_perc) + "%\n")
 
@@ -39,7 +39,7 @@ for router in three_routers:
 
     #show ip protocols
     protocol = re.search(r"\"\w+", connected.send_command("show ip protocols")).group()
-    print("Routing Protocol Information:\n", "Protocol: " + protocol[1:])
+    print("Routing Protocol Information:\n" + "Protocol: " + protocol[1:])
 
     #show ip ospf neighbors
     neighbours = re.findall(r"\d\.\d\.\d\.\d", connected.send_command("show ip ospf neighbor"))

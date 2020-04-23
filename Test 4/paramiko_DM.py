@@ -25,6 +25,10 @@ for router in three_routers:
 
     connected = client.invoke_shell()
 
+    #Get Router ID
+    router_id = connected.recv(65535).decode('utf-8').strip("\r\n")
+    print("Router: " + router_id)
+
     #show file systems
     connected.send("show file systems\n")
     fs_result = ""
@@ -35,7 +39,7 @@ for router in three_routers:
         fs_result = fs_result + connected.recv(65535).decode('utf-8')
 
     fs_info = re.findall(r"\d+\s+\d+\s+\w+", fs_result)[0].split()
-    fs_perc = '{:.2f}'.format((int(fs_info[1]) / int(fs_info[0])) * 100)
+    fs_perc = '{:.2f}'.format(100 - (int(fs_info[1]) / int(fs_info[0])) * 100)
     print("File System Usage:\nType: " + fs_info[2], "Size(b): " + fs_info[0], "Free: " + fs_info[1],
           "Percent Used: " + str(fs_perc) + "%\n")
 
@@ -64,7 +68,7 @@ for router in three_routers:
         protocol_result = protocol_result + connected.recv(65535).decode('utf-8')
 
     protocol = re.search(r"\"\w+", protocol_result).group()
-    print("Routing Protocol Information:\n", "Protocol: " + protocol[1:])
+    print("Routing Protocol Information:\n" + "Protocol: " + protocol[1:])
 
     #show ip ospf neighbors
     connected.send("show ip ospf neighbor\n")
@@ -78,11 +82,12 @@ for router in three_routers:
     neighbours = re.findall(r"\d\.\d\.\d\.\d", neighbours_result)
     print("Neighbour Routers:", ", ".join(neighbours) + "\n")
     connected.close()
+
     client.connect(router['host'], username=router['username'], password=router['password'])
     scp_connection = scp.SCPClient(client.get_transport())
-    scp_connection.get("nvram:startup-config", "/root/" + router['host'] + "config.txt")
+    scp_connection.get("nvram:startup-config", "/root/" + router_id + "config.txt")
     scp_connection.close()
-
+    print("Configuration Backed up\n")
 
 client.close()
 
